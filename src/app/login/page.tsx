@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  signInWithPopup,
-  GoogleAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
@@ -45,22 +43,6 @@ export default function LoginPage() {
       }
     }
   }, [user, role, authLoading, router]);
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      console.warn("Google Sign-In notice:", error.code, error.message);
-      if (error.code !== "auth/popup-closed-by-user") {
-        setErrorMessage("Google Sign-In failed. Please use the Quick Login buttons below.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,7 +271,7 @@ export default function LoginPage() {
           </form>
 
           {/* Toggle Sign Up / Sign In */}
-          <p className="text-center text-xs text-slate-500 font-semibold">
+          <p className="text-center text-xs text-slate-500 font-semibold pt-2">
             {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
             <button
               type="button"
