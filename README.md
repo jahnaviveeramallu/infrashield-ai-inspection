@@ -46,7 +46,7 @@ InfraShield AI bridges this gap by providing an end-to-end digital infrastructur
 * **Frontend & Framework:** Next.js (React), TypeScript
 * **Styling & Animations:** Tailwind CSS, Lucide Icons, Framer Motion
 * **Backend & Auth:** Firebase Auth
-* **State Management:** React Context API
+* **State Management:** React Context API , Gemini 3.5 flash API
 
 ## 🏁 Getting Started for Local Development
 
