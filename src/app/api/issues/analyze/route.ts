@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     // Updated with active standard Gemini API model identifiers
     const MODELS_TO_TRY = [
       "gemini-3.6-flash",
-      "gemini-3.5-flash-lite"
+      "gemini-3.5-flash"
     ];
     
     const promptText = buildGeminiPrompt() + (userDescription ? `\n\nInspector Observation Notes: ${userDescription}` : "");
