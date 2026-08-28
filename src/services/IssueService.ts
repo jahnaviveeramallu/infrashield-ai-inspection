@@ -1,12 +1,11 @@
 // src/services/IssueService.ts
-
+import { evaluatePriority, calculatePriority } from '../lib/agents/PriorityAgent';
 import { getCollection, dateToTimestamp, timestampToDate } from '../lib/firebase/helpers';
 import { COLLECTION_NAMES, ISSUE_STATUS } from '../constants';
 import { Issue, Location } from '../types';
 import { GeminiService } from '../lib/gemini/service';
 import { VisionAgent } from '../lib/agents/VisionAgent';
 import { ContextAgent } from '../lib/agents/ContextAgent';
-import { calculatePriority } from '../lib/agents/PriorityAgent';
 import { RecommendationAgent } from '../lib/agents/RecommendationAgent';
 import { ExecutiveSummaryAgent } from '../lib/agents/ExecutiveSummaryAgent';
 import { DuplicateDetectionAgent } from '../lib/agents/DuplicateDetectionAgent';
@@ -14,8 +13,8 @@ import { DuplicateDetectionAgent } from '../lib/agents/DuplicateDetectionAgent';
 // Mock Communications Agent for parsing
 const CommunicationsAgent = {
   process: (rawJson: any) => ({
-    tweetDraft: rawJson.communications?.tweetDraft || "Issue reported in your area. Teams are investigating.",
-    emailDraft: rawJson.communications?.emailDraft || "Please dispatch a team to the reported location."
+    tweetDraft: rawJson?.communications?.tweetDraft || "Issue reported in your area. Teams are investigating.",
+    emailDraft: rawJson?.communications?.emailDraft || "Please dispatch a team to the reported location."
   })
 };
 
@@ -100,15 +99,16 @@ export class IssueService {
     const vision = VisionAgent.process(geminiRaw);
     const context = ContextAgent.process(geminiRaw);
     
-    // Updated function invocation for calculatePriority
+    // Invocation for calculatePriority with fallback parameters
     const priority = calculatePriority(vision, Number(geminiRaw?.priority?.score) || 0, 0); 
     
     const recommendation = RecommendationAgent.process(geminiRaw);
     const executiveSummary = ExecutiveSummaryAgent.process(geminiRaw);
     const communications = CommunicationsAgent.process(geminiRaw);
     
-    // 3. Run Geospatial Duplicate Detection
-    const duplicateDetection = await this.checkDuplicateIssues(location, vision.issueType);
+    // 3. Run Geospatial Duplicate Detection with string fallback guarantee
+    const issueTypeString = vision.issueType || vision.category || 'Unknown';
+    const duplicateDetection = await this.checkDuplicateIssues(location, issueTypeString);
 
     // 4. Construct complete Issue payload and save to Firestore
     const newIssueData: Omit<Issue, 'id' | 'createdAt' | 'updatedAt'> = {

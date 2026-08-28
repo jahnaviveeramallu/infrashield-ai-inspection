@@ -2,18 +2,21 @@ import { GeminiResponse, VisionData } from '../../types';
 
 export class VisionAgent {
   /**
-   * Processes the raw Gemini JSON to extract and transform Vision data.
+   * Processes raw Gemini JSON data into a structured VisionData object.
    */
   static process(rawGeminiData: Omit<GeminiResponse, 'duplicateDetection'>): VisionData {
-    const vision = rawGeminiData.vision;
-    
-    // In a more complex app, we might do extra transformations here.
-    // For now, it simply validates and passes through the data.
+    const vision = rawGeminiData.vision || {};
+
     return {
+      isInfrastructure: vision.isInfrastructure ?? true,
+      hasDamage: vision.hasDamage ?? true,
       issueType: vision.issueType || 'Unknown Issue',
       severity: vision.severity || 'MEDIUM',
-      confidence: vision.confidence || 0.5,
+      confidenceScore: vision.confidenceScore ?? vision.confidence ?? 0.5,
+      confidence: vision.confidence ?? vision.confidenceScore ?? 0.5,
       probableCause: vision.probableCause || 'Analysis inconclusive.',
+      category: vision.category || vision.issueType || 'General Infrastructure',
+      description: vision.description || 'Infrastructure issue observed.',
     };
   }
 }

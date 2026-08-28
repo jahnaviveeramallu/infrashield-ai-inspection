@@ -7,15 +7,18 @@ export class DuplicateDetectionAgent {
    */
   private static getDistance(loc1: Location, loc2: Location): number {
     const R = 6371e3; // Earth radius in meters
-    const lat1 = loc1.lat * Math.PI / 180;
-    const lat2 = loc2.lat * Math.PI / 180;
-    const deltaLat = (loc2.lat - loc1.lat) * Math.PI / 180;
-    const deltaLng = (loc2.lng - loc1.lng) * Math.PI / 180;
+    const lat1 = (loc1.lat * Math.PI) / 180;
+    const lat2 = (loc2.lat * Math.PI) / 180;
+    const deltaLat = ((loc2.lat - loc1.lat) * Math.PI) / 180;
+    const deltaLng = ((loc2.lng - loc1.lng) * Math.PI) / 180;
 
-    const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
-              Math.cos(lat1) * Math.cos(lat2) *
-              Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a =
+      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+      Math.cos(lat1) *
+        Math.cos(lat2) *
+        Math.sin(deltaLng / 2) *
+        Math.sin(deltaLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c;
   }
@@ -26,15 +29,23 @@ export class DuplicateDetectionAgent {
    * In production, use Firestore GeoQueries.
    */
   static process(
-    newLocation: Location, 
-    newIssueType: string, 
-    existingIssues: Issue[], 
+    newLocation: Location,
+    newIssueType: string,
+    existingIssues: Issue[],
     radiusMeters: number = 50
   ): DuplicateDetectionData {
-    const duplicates = existingIssues.filter(issue => {
-      // Must be same type
-      if (issue.vision.issueType.toLowerCase() !== newIssueType.toLowerCase()) return false;
-      
+    const duplicates = existingIssues.filter((issue) => {
+      // Safely extract issueType or category with fallback to empty string
+      const existingType = (
+        issue.vision?.issueType ||
+        issue.vision?.category ||
+        ''
+      ).toLowerCase();
+      const targetType = (newIssueType || '').toLowerCase();
+
+      // Must match issue type
+      if (!existingType || existingType !== targetType) return false;
+
       // Must be within radius
       const distance = this.getDistance(newLocation, issue.location);
       return distance <= radiusMeters;
@@ -42,7 +53,7 @@ export class DuplicateDetectionAgent {
 
     return {
       similarIssuesNearby: duplicates.length > 0,
-      duplicateIssueIds: duplicates.map(d => d.id),
+      duplicateIssueIds: duplicates.map((d) => d.id),
     };
   }
 }

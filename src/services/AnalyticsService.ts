@@ -13,10 +13,10 @@ export class AnalyticsService {
 
     const categoryDistribution: Record<string, number> = {};
     const priorityDistribution = {
-      low: 0,    // 0-25
-      medium: 0, // 26-50
-      high: 0,   // 51-75
-      critical: 0 // 76-100
+      low: 0,      // 0-25
+      medium: 0,   // 26-50
+      high: 0,     // 51-75
+      critical: 0  // 76-100
     };
 
     issues.forEach(issue => {
@@ -27,16 +27,16 @@ export class AnalyticsService {
         resolvedIssues++;
       }
 
-      if (issue.vision.severity === SEVERITY_LEVELS.CRITICAL) {
+      if (issue.vision?.severity === SEVERITY_LEVELS.CRITICAL) {
         criticalIssues++;
       }
 
-      // Category Distribution
-      const category = issue.vision.issueType;
+      // Category Distribution with safe fallback string key
+      const category = issue.vision?.issueType || issue.vision?.category || 'Unknown';
       categoryDistribution[category] = (categoryDistribution[category] || 0) + 1;
 
-      // Priority Distribution
-      const score = issue.priority.score;
+      // Priority Distribution with safe score access
+      const score = issue.priority?.score ?? 0;
       if (score <= 25) priorityDistribution.low++;
       else if (score <= 50) priorityDistribution.medium++;
       else if (score <= 75) priorityDistribution.high++;
@@ -45,7 +45,10 @@ export class AnalyticsService {
 
     // Calculate Hackathon ROI Data (Predictive Budget Savings)
     // Formula: Each priority point saves ~₹1,00,000 (1 Lakh) in delayed emergency repair costs
-    const currentMonthSavings = issues.reduce((acc, issue) => acc + (issue.priority.score * 100000), 0);
+    const currentMonthSavings = issues.reduce(
+      (acc, issue) => acc + ((issue.priority?.score ?? 0) * 100000), 
+      0
+    );
     const totalBudgetSaved = 12500000 + currentMonthSavings; // Add historical base (1.25 Cr)
     
     // Generate realistic monthly ROI trend for charts (in INR)
@@ -76,7 +79,11 @@ export class AnalyticsService {
     };
   }
 
-  private static generateAIInsights(issues: Issue[], categoryDistribution: Record<string, number>, criticalCount: number): string[] {
+  private static generateAIInsights(
+    issues: Issue[], 
+    categoryDistribution: Record<string, number>, 
+    criticalCount: number
+  ): string[] {
     const insights: string[] = [];
 
     if (issues.length === 0) {

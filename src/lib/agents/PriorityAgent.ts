@@ -1,47 +1,42 @@
-// src/lib/agents/PriorityAgent.ts
+import { VisionData, PriorityData } from '@/types';
 
-import { PriorityData, VisionData } from "@/types";
-
-export function calculatePriority(
+export function evaluatePriority(
   vision: VisionData,
-  rawScore?: number,
-  upvotes: number = 0
+  fallbackScore?: number,
+  minScore?: number
 ): PriorityData {
   // 1. If not valid infrastructure or no damage, return 0 priority
   if (vision.isInfrastructure === false || vision.hasDamage === false) {
     return {
       score: 0,
-      municipalPriorityReason: "No actionable infrastructure hazard identified."
+      municipalPriorityReason: "No actionable infrastructure hazard identified.",
     };
   }
 
-  // 2. Base severity map
-  const severityBaseMap: Record<string, number> = {
-    CRITICAL: 85,
-    HIGH: 65,
-    MEDIUM: 45,
-    LOW: 25
-  };
+  // 2. Base priority score calculation for valid infrastructure issues
+  let score = fallbackScore && fallbackScore > 0 ? fallbackScore : 50;
 
-  let baseScore = rawScore && rawScore > 0 
-    ? rawScore 
-    : (severityBaseMap[vision.severity?.toUpperCase()] || 50);
-
-  // 3. Dynamic adjustment based on community upvotes (capped contribution)
-  const upvoteBonus = Math.min(10, Math.floor(upvotes / 5));
-  const finalScore = Math.min(99, Math.max(10, baseScore + upvoteBonus));
-
-  let reason = "Routine maintenance required.";
-  if (finalScore >= 80) {
-    reason = "Critical public safety hazard requiring immediate emergency intervention.";
-  } else if (finalScore >= 60) {
-    reason = "High-priority structural issue posing active risk to commuter traffic.";
-  } else if (finalScore >= 40) {
-    reason = "Moderate infrastructure defect scheduled for standard repair cycle.";
+  // Add weight based on category if present in vision response
+  if (vision.category) {
+    const categoryLower = vision.category.toLowerCase();
+    if (categoryLower.includes("pothole") || categoryLower.includes("road")) {
+      score += 20;
+    } else if (categoryLower.includes("drainage") || categoryLower.includes("water")) {
+      score += 25;
+    } else if (categoryLower.includes("electrical") || categoryLower.includes("wire")) {
+      score += 30;
+    }
   }
 
+  // Cap score between minScore (or 0) and 100
+  const floor = minScore ?? 0;
+  score = Math.min(Math.max(score, floor), 100);
+
   return {
-    score: finalScore,
-    municipalPriorityReason: reason
+    score,
+    municipalPriorityReason: `Validated hazard detected in category: ${vision.category || 'General Infrastructure'}. Assigned priority score of ${score}/100.`,
   };
 }
+
+// Export alias to seamlessly resolve legacy multi-argument imports in route.ts & IssueService.ts
+export const calculatePriority = evaluatePriority;

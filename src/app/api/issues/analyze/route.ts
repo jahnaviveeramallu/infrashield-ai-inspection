@@ -1,5 +1,5 @@
 // src/app/api/issues/analyze/route.ts
-
+import { evaluatePriority } from "@/lib/agents/PriorityAgent";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "@/lib/firebase/client";

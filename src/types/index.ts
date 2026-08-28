@@ -1,13 +1,22 @@
+// ============================================
+// INFRASHIELD AI — CENTRALIZED TYPE DEFINITIONS
+// ============================================
+
 export interface Location {
   lat: number;
   lng: number;
 }
 
 export interface VisionData {
-  issueType: string;
-  severity: string;
-  confidence: number;
-  probableCause: string;
+  isInfrastructure?: boolean;
+  hasDamage?: boolean;
+  issueType?: string;
+  severity?: string;
+  probableCause?: string;
+  category?: string;
+  description?: string;
+  confidenceScore?: number; // Add this line
+  confidence?: number;      // Add this line
 }
 
 export interface ContextData {
@@ -62,7 +71,7 @@ export interface Issue {
   createdAt: Date;
   updatedAt: Date;
   
-  // Enriched AI Data
+  // Enriched Multi-Agent AI Data
   vision: VisionData;
   context: ContextData;
   priority: PriorityData;
@@ -77,12 +86,13 @@ export interface User {
   email: string;
   displayName: string;
   role: 'CITIZEN' | 'ADMIN';
+  points?: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 // ============================================
-// NEW TYPES — INFRASHIELD AI (Theme #9)
+// MUNICIPAL WORKFLOW & MANAGEMENT TYPES
 // ============================================
 
 export type DefectCategory =
