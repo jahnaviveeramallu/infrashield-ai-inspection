@@ -1,4 +1,3 @@
-// src/app/api/issues/analyze/route.ts
 import { evaluatePriority } from "@/lib/agents/PriorityAgent";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -100,13 +99,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-   const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Updated with active Gemini API models
+    // Updated with active standard Gemini API model identifiers
     const MODELS_TO_TRY = [
-      "gemini-3.6-flash",
-      "gemini-3.1-pro-preview",
-      "gemini-2.5-flash-lite"
+      "gemini-2.5-flash",
+      "gemini-1.5-flash",
+      "gemini-1.5-pro"
     ];
     
     const promptText = buildGeminiPrompt() + (userDescription ? `\n\nInspector Observation Notes: ${userDescription}` : "");
@@ -186,10 +185,7 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // 7. Save ONLY Valid Infrastructure Defects to Firestore
     // 7. Save Valid Issue to Firestore (Preventing >1MB Base64 Overhead)
-    // Optional: Upload base64Data to Firebase Storage here and set fullImageUrl to the public HTTP URL.
-    // If saving base64 directly, keep a lightweight fallback if it's too large for a single Firestore string:
     const safeImageUrl = fullImageUrl.length > 500000 
       ? `data:${mimeType};base64,[IMAGE_DATA_TRUNCATED_FOR_FIRESTORE]` 
       : fullImageUrl;

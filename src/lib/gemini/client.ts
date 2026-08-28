@@ -6,10 +6,11 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ✅ Latest Flash model (has free quota)
+// Standard production-ready model for multimodal analysis
 export const geminiModel = genAI.getGenerativeModel({
-  model: 'gemini-flash-latest',
+  model: 'gemini-2.5-flash',
   generationConfig: {
+    responseMimeType: 'application/json',
     temperature: 0.4,
     topK: 32,
     topP: 1,
@@ -18,8 +19,9 @@ export const geminiModel = genAI.getGenerativeModel({
 });
 
 export const geminiVisionModel = genAI.getGenerativeModel({
-  model: 'gemini-flash-latest',
+  model: 'gemini-2.5-flash',
   generationConfig: {
+    responseMimeType: 'application/json',
     temperature: 0.2,
     topK: 32,
     topP: 1,
