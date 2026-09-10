@@ -147,7 +147,7 @@ export default function MapPage() {
       if (data.success) setIssues(data.data || []);
     } catch (err) {
       console.error("Failed to load map points:", err);
-    } font-medium {
+    } finally {
       setLoading(false);
     }
   }, [role, user?.uid]);
