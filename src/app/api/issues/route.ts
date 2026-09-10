@@ -3,7 +3,7 @@ import { db } from "@/lib/firebase/client";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { COLLECTION_NAMES } from "@/constants";
 
-// ✅ CRITICAL FIX: Forces Vercel to fetch fresh data every time instead of caching old reports!
+// Forces Next.js/Vercel to render dynamically and serve fresh data on every request
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
@@ -26,13 +26,13 @@ export async function GET(request: NextRequest) {
       );
       snapshot = await getDocs(q);
     }
-    // No auth = empty result
+    // Unauthenticated or missing parameters = empty result
     else {
       return NextResponse.json({ success: true, data: [] });
     }
 
     const issues = snapshot.docs.map((doc) => {
-      const data = doc.data() as any;
+      const data = doc.data();
       return {
         id: doc.id,
         ...data,
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Sort newest first
+    // Sort newest first by timestamp
     issues.sort(
       (a: any, b: any) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
