@@ -26,7 +26,7 @@ export function calculatePriority(vision: VisionData): PriorityData {
     } else if (categoryLower.includes("drainage") || categoryLower.includes("water")) {
       score += 6;
     } else if (categoryLower.includes("electrical") || categoryLower.includes("wire") || categoryLower.includes("light")) {
-      score += 7; // Electrical issues are slightly higher priority
+      score += 7;
     } else {
       score += 2;
     }
@@ -41,7 +41,9 @@ export function calculatePriority(vision: VisionData): PriorityData {
   };
 }
 
-// Keep a class wrapper just in case other parts of the app use it
+// ✅ Export evaluatePriority alias so both function names work across all imports
+export const evaluatePriority = calculatePriority;
+
 export class PriorityAgent {
   static process(geminiRaw: any, _upvotes = 0): PriorityData {
     const vision = (geminiRaw?.vision || geminiRaw || {}) as VisionData;

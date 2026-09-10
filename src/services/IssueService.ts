@@ -6,6 +6,7 @@ import { Issue, Location } from '../types';
 import { GeminiService } from '../lib/gemini/service';
 import { VisionAgent } from '../lib/agents/VisionAgent';
 import { ContextAgent } from '../lib/agents/ContextAgent';
+import { PriorityAgent } from '../lib/agents/PriorityAgent';
 import { RecommendationAgent } from '../lib/agents/RecommendationAgent';
 import { ExecutiveSummaryAgent } from '../lib/agents/ExecutiveSummaryAgent';
 import { DuplicateDetectionAgent } from '../lib/agents/DuplicateDetectionAgent';
@@ -13,15 +14,15 @@ import { DuplicateDetectionAgent } from '../lib/agents/DuplicateDetectionAgent';
 // Mock Communications Agent for parsing
 const CommunicationsAgent = {
   process: (rawJson: any) => ({
-    tweetDraft: rawJson?.communications?.tweetDraft || "Issue reported in your area. Teams are investigating.",
-    emailDraft: rawJson?.communications?.emailDraft || "Please dispatch a team to the reported location."
+    tweetDraft: rawJson.communications?.tweetDraft || "Issue reported in your area. Teams are investigating.",
+    emailDraft: rawJson.communications?.emailDraft || "Please dispatch a team to the reported location."
   })
 };
 
 export class IssueService {
   private static collection = getCollection(COLLECTION_NAMES.ISSUES);
 
-  private static mapToIssue(docId: string, data: FirebaseFirestore.DocumentData): Issue {
+  private static mapToIssue(docId: string, data: any): Issue {
     return {
       id: docId,
       imageUrl: data.imageUrl,
@@ -43,7 +44,6 @@ export class IssueService {
   static async createIssue(issueData: Omit<Issue, 'id' | 'createdAt' | 'updatedAt'>): Promise<Issue> {
     const now = new Date();
     
-    // Default upvotes for a new issue
     const issueToCreate = {
       ...issueData,
       upvotes: issueData.upvotes || 0,
@@ -74,7 +74,8 @@ export class IssueService {
 
   static async getAllIssues(): Promise<Issue[]> {
     const snapshot = await this.collection.orderBy('createdAt', 'desc').get();
-    return snapshot.docs.map(doc => this.mapToIssue(doc.id, doc.data()));
+    // ✅ Fixed: Explicitly typed doc parameter as any to satisfy TypeScript strict mode
+    return snapshot.docs.map((doc: any) => this.mapToIssue(doc.id, doc.data()));
   }
 
   static async updateIssue(id: string, updateData: Partial<Omit<Issue, 'id' | 'createdAt' | 'updatedAt'>>): Promise<void> {
@@ -89,28 +90,18 @@ export class IssueService {
     await this.collection.doc(id).delete();
   }
 
-  // --- Phase 4: Business Logic Orchestration ---
-
   static async analyzeIssue(imageUrl: string, base64Image: string, mimeType: string, location: Location): Promise<Issue> {
-    // 1. Single Call to Gemini API
     const geminiRaw = await GeminiService.analyzeImage(base64Image, mimeType);
     
-    // 2. Distribute raw JSON to Logical Agent Modules
     const vision = VisionAgent.process(geminiRaw);
     const context = ContextAgent.process(geminiRaw);
-    
-    // Invocation for calculatePriority with fallback parameters
-    const priority = calculatePriority(vision, Number(geminiRaw?.priority?.score) || 0, 0); 
-    
+    const priority = PriorityAgent.process(geminiRaw, 0);
     const recommendation = RecommendationAgent.process(geminiRaw);
     const executiveSummary = ExecutiveSummaryAgent.process(geminiRaw);
     const communications = CommunicationsAgent.process(geminiRaw);
     
-    // 3. Run Geospatial Duplicate Detection with string fallback guarantee
-    const issueTypeString = vision.issueType || vision.category || 'Unknown';
-    const duplicateDetection = await this.checkDuplicateIssues(location, issueTypeString);
+    const duplicateDetection = await this.checkDuplicateIssues(location, vision.issueType || 'General');
 
-    // 4. Construct complete Issue payload and save to Firestore
     const newIssueData: Omit<Issue, 'id' | 'createdAt' | 'updatedAt'> = {
       imageUrl,
       location,
@@ -150,7 +141,6 @@ export class IssueService {
     if (!issue) throw new Error('Issue not found');
     
     const newUpvotes = issue.upvotes + 1;
-    // Simple heuristic: increase score by 1 for every upvote, capped at 100
     const newScore = Math.min(100, issue.priority.score + 1); 
     
     const docRef = this.collection.doc(id);
