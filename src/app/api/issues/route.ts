@@ -3,6 +3,9 @@ import { db } from "@/lib/firebase/client";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { COLLECTION_NAMES } from "@/constants";
 
+// ✅ CRITICAL FIX: Forces Vercel to fetch fresh data every time instead of caching old reports!
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
