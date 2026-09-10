@@ -1,10 +1,6 @@
 import { VisionData, PriorityData } from '@/types';
 
-export function evaluatePriority(
-  vision: VisionData,
-  fallbackScore?: number,
-  minScore?: number
-): PriorityData {
+export function calculatePriority(vision: VisionData): PriorityData {
   // 1. If not valid infrastructure or no damage, return 0 priority
   if (vision.isInfrastructure === false || vision.hasDamage === false) {
     return {
@@ -13,30 +9,42 @@ export function evaluatePriority(
     };
   }
 
-  // 2. Base priority score calculation for valid infrastructure issues
-  let score = fallbackScore && fallbackScore > 0 ? fallbackScore : 50;
+  // 2. Base priority score calculation based on AI severity string
+  const severity = (vision.severity || "MEDIUM").toUpperCase();
+  let score = 50;
 
-  // Add weight based on category if present in vision response
-  if (vision.category) {
-    const categoryLower = vision.category.toLowerCase();
+  if (severity === "CRITICAL") score = 92;
+  else if (severity === "HIGH") score = 75;
+  else if (severity === "MEDIUM") score = 55;
+  else if (severity === "LOW") score = 35;
+
+  // 3. Add dynamic weight based on category to ensure unique scores
+  if (vision.issueType) {
+    const categoryLower = vision.issueType.toLowerCase();
     if (categoryLower.includes("pothole") || categoryLower.includes("road")) {
-      score += 20;
+      score += 4;
     } else if (categoryLower.includes("drainage") || categoryLower.includes("water")) {
-      score += 25;
-    } else if (categoryLower.includes("electrical") || categoryLower.includes("wire")) {
-      score += 30;
+      score += 6;
+    } else if (categoryLower.includes("electrical") || categoryLower.includes("wire") || categoryLower.includes("light")) {
+      score += 7; // Electrical issues are slightly higher priority
+    } else {
+      score += 2;
     }
   }
 
-  // Cap score between minScore (or 0) and 100
-  const floor = minScore ?? 0;
-  score = Math.min(Math.max(score, floor), 100);
+  // Cap score between 0 and 100 safely
+  score = Math.min(Math.max(score, 0), 100);
 
   return {
     score,
-    municipalPriorityReason: `Validated hazard detected in category: ${vision.category || 'General Infrastructure'}. Assigned priority score of ${score}/100.`,
+    municipalPriorityReason: `Validated hazard detected (${vision.issueType || 'General'}). Assigned dynamic priority score of ${score}/100.`,
   };
 }
 
-// Export alias to seamlessly resolve legacy multi-argument imports in route.ts & IssueService.ts
-export const calculatePriority = evaluatePriority;
+// Keep a class wrapper just in case other parts of the app use it
+export class PriorityAgent {
+  static process(geminiRaw: any, _upvotes = 0): PriorityData {
+    const vision = (geminiRaw?.vision || geminiRaw || {}) as VisionData;
+    return calculatePriority(vision);
+  }
+}

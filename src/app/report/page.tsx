@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { DEFECT_CATEGORIES } from "@/constants";
 
-// Helper to compress and resize image client-side before upload
 async function compressImage(file: File, maxWidth = 1000, quality = 0.7): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -222,7 +221,13 @@ export default function ReportPage() {
       }
 
       setAnalysisResult(analyzeData.data);
-      setSubmittedTicket(analyzeData.data?.id || `ISSUE-${Math.floor(100000 + Math.random() * 900000)}`);
+      
+      // FIX: Use real Gemini ID or generate a mock one
+      const ticketId = analyzeData.data?.id 
+        ? `ISSUE-${analyzeData.data.id.substring(0, 6).toUpperCase()}` 
+        : `ISSUE-${Math.floor(100000 + Math.random() * 900000)}`;
+      
+      setSubmittedTicket(ticketId);
     } catch (err: any) {
       setIsPersonalOrSpam(true);
       setErrorMessage("REJECTED: Unable to analyze photo. Please ensure it shows clear infrastructure damage. 0 Points Awarded.");
@@ -238,9 +243,11 @@ export default function ReportPage() {
     </div>
   );
 
-  if (submittedTicket) {
-    const severityScore = analysisResult?.priority?.score || 50;
-    const etaDays = severityScore > 80 ? 5 : severityScore > 60 ? 3 : 2;
+  // FIX: Dynamic values in Success Modal
+  if (submittedTicket && analysisResult) {
+    const severityScore = Number(analysisResult?.priority?.score || 50);
+    const departmentName = analysisResult?.recommendation?.department || "Public Works Department";
+    const estimatedETA = analysisResult?.recommendation?.eta || (severityScore >= 80 ? "Immediate (24h)" : severityScore >= 50 ? "2-3 Days" : "5+ Days");
 
     return (
       <div className="min-h-[85vh] bg-[#f8fafc] flex items-center justify-center px-4 py-12">
@@ -253,25 +260,28 @@ export default function ReportPage() {
               Report Submitted (+50 PTS)
             </span>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Thank You for Reporting!</h1>
-            <p className="text-slate-500 text-sm font-medium">Your report has been sent to the municipal office.</p>
+            <p className="text-slate-500 text-sm font-medium">Your report has been analyzed by AI and sent to the municipal office.</p>
           </div>
 
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-left space-y-3 text-xs font-semibold text-slate-600">
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
               <span className="text-slate-400 font-mono">TICKET ID</span>
-              <span className="font-mono font-bold text-slate-950">{submittedTicket.substring(0, 12).toUpperCase()}</span>
+              <span className="font-mono font-bold text-slate-950">{submittedTicket}</span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-              <span className="text-slate-400 font-mono">URGENCY SCORE</span>
-              <span className="font-bold text-rose-600">{severityScore} / 100</span>
+              <span className="text-slate-400 font-mono">AI URGENCY SCORE</span>
+              {/* Dynamic Score Color */}
+              <span className={`font-bold ${severityScore >= 80 ? 'text-rose-600' : severityScore >= 50 ? 'text-orange-600' : 'text-blue-600'}`}>
+                {severityScore} / 100
+              </span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-              <span className="text-slate-400 font-mono">MAX TIME TO FIX</span>
-              <span className="font-bold text-blue-600">{etaDays} Days (ETA)</span>
+              <span className="text-slate-400 font-mono">ESTIMATED ETA</span>
+              <span className="font-bold text-blue-600">{estimatedETA}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-400 font-mono">DEPARTMENT</span>
-              <span className="font-bold text-slate-950">{analysisResult?.recommendation?.department || "Public Works Department"}</span>
+              <span className="font-bold text-slate-950 text-right w-1/2 truncate">{departmentName}</span>
             </div>
           </div>
 
@@ -328,7 +338,6 @@ export default function ReportPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Photo Upload Card */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
               <Camera className="h-4.5 w-4.5 text-blue-500" /> 1. Upload Photo of the Issue
@@ -358,7 +367,6 @@ export default function ReportPage() {
             )}
           </div>
 
-          {/* Location & Category Card */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
               <MapPin className="h-4.5 w-4.5 text-blue-500" /> 2. Location & Category
@@ -409,7 +417,6 @@ export default function ReportPage() {
             </div>
           </div>
 
-          {/* Optional Description Card */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
               <FileText className="h-4.5 w-4.5 text-blue-500" /> 3. Description (Optional)
@@ -423,7 +430,6 @@ export default function ReportPage() {
             />
           </div>
 
-          {/* Submit Button */}
           <button 
             type="submit" 
             disabled={isSubmitting || !imagePreview || (!address.trim() && !coordinates)} 

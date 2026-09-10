@@ -169,11 +169,11 @@ export async function POST(request: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey);
 
     // Fast, lightweight models for quick execution (< 3 seconds)
-  const MODELS_TO_TRY = [
-  "gemini-3.5-flash-lite",
-  "gemini-3.6-flash",
-  "gemini-1.5-flash",
-];
+    const MODELS_TO_TRY = [
+      "gemini-3.5-flash-lite",
+      "gemini-3.6-flash",
+      "gemini-1.5-flash",
+    ];
 
     const promptText =
       buildGeminiPrompt() +
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 8. Priority Score Calculation
+    // 8. Priority Score Calculation (Passing ONLY 1 argument)
     let dynamicPriority = calculatePriority(vision);
 
     const baseScore = Number(dynamicPriority?.score || 0);
